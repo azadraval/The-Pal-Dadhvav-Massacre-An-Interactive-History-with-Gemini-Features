@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pal-Dadhvav Massacre: An Interactive History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Earth and Clay -->
+    <!-- Application Structure Plan: The application is designed as a single-page scrolling narrative with a sticky navigation bar. The structure is thematic, not chronological, to create a more compelling user journey. It starts by highlighting the core conflict (the disputed facts) to grab attention. It then explores the 'why' (the uprising's causes), provides crucial context through comparison (vs. Jallianwala Bagh), explains the historical neglect, and concludes with the story of its modern reclamation. This structure turns a historical report into an investigative story, guiding the user from mystery to understanding, which is more engaging than a linear presentation. -->
+    <!-- Visualization & Content Choices: 1. Casualty Data -> Goal: Compare conflicting reports -> Viz: Interactive Bar Chart (Chart.js) -> Interaction: Hover for details, buttons to toggle datasets -> Justification: Visually demonstrates the vast discrepancies in historical records, which is a central theme. 2. Comparative Analysis -> Goal: Contrast Pal-Dadhvav and Jallianwala Bagh -> Viz: Two-column text layout -> Interaction: Clickable tabs to switch between comparison points (e.g., Cause, Aftermath) -> Justification: Allows for direct, focused comparison on specific facets, making the information easier to digest. 3. Reasons for Obscurity -> Goal: Explain complex factors -> Viz: Icon-based grid -> Interaction: Hover effects -> Justification: Simplifies abstract concepts (ideology, media access) into scannable visual points. 4. Reclamation Timeline -> Goal: Show chronological recovery of the story -> Viz: Vertical timeline (HTML/CSS) -> Interaction: Scroll-based discovery -> Justification: Intuitive format for chronological data. All choices avoid SVG/Mermaid as required. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 450px;
+        }
+        .nav-link {
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #C06A50;
+        }
+        .tab-btn.active {
+            background-color: #C06A50;
+            color: #FFFFFF;
+        }
+        .tab-btn {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.75rem;
+            top: 0.25rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            background-color: #E6DACE;
+            border: 4px solid #FDFBF8;
+        }
+        .timeline-item:hover::before {
+            background-color: #C06A50;
+        }
+        .chat-message {
+            background-color: #E6DACE;
+            padding: 1rem;
+            border-radius: 0.75rem;
+        }
+        .user-message {
+            background-color: #C06A50;
+            color: #FFFFFF;
+        }
+        #loading-indicator, #tts-loading {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #C06A50;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="font-bold text-xl text-[#4A4A4A]">The Pal-Dadhvav Story</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#event" class="nav-link font-semibold">The Event</a>
+                <a href="#uprising" class="nav-link font-semibold">The Uprising</a>
+                <a href="#comparison" class="nav-link font-semibold">Comparison</a>
+                <a href="#legacy" class="nav-link font-semibold">Legacy</a>
+                <a href="#chatbot" class="nav-link font-semibold">Ask a Historian</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-2xl">☰</button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <a href="#event" class="block py-2 nav-link">The Event</a>
+            <a href="#uprising" class="block py-2 nav-link">The Uprising</a>
+            <a href="#comparison" class="block py-2 nav-link">Comparison</a>
+            <a href="#legacy" class="block py-2 nav-link">Legacy</a>
+            <a href="#chatbot" class="block py-2 nav-link">Ask a Historian</a>
+        </div>
+    </header>
+
+    <main>
+        <section class="text-center py-20 px-6 bg-[#E6DACE]/30">
+            <div class="container mx-auto">
+                <h2 class="text-4xl md:text-6xl font-bold text-[#333] mb-4">A Massacre Lost to History</h2>
+                <p class="text-lg md:text-xl max-w-3xl mx-auto text-[#5E5E5E]">On March 7, 1922, a tragedy unfolded in Gujarat that was larger than Jallianwala Bagh, yet it was almost erased from India's memory. This is the story of the Pal-Dadhvav massacre, the tribal resistance that sparked it, and its long journey back into the light.</p>
+            </div>
+        </section>
+
+        <section id="event" class="py-20 px-6">
+            <div class="container mx-auto">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold mb-2">An Event of Contradictions</h3>
+                    <p class="max-w-3xl mx-auto text-lg">The most basic facts about the Pal-Dadhvav massacre are contested. The official British account drastically minimized the event, while local memory and modern research paint a far grimmer picture. This discrepancy is central to understanding why the story was lost. This chart visualizes the conflicting claims about the number of lives lost, a stark representation of a history suppressed.</p>
+                    <div class="flex justify-center mt-6">
+                        <button id="tts-button" class="bg-[#C06A50] text-white font-bold py-2 px-6 rounded-full shadow-md hover:bg-[#A95A44] transition-colors flex items-center gap-2">
+                           <span>✨ Listen to this section</span>
+                           <div id="tts-loading" class="hidden"></div>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="casualtyChart"></canvas>
+                </div>
+                <div class="text-center mt-8">
+                    <p class="text-sm text-gray-600">Hover over the bars to see the source of each claim.</p>
+                </div>
+
+                <div class="mt-16 grid md:grid-cols-2 gap-8 items-center">
+                    <div class="p-8 bg-white rounded-lg shadow-md">
+                        <h4 class="font-bold text-xl mb-3">The Date Discrepancy</h4>
+                        <p>Historical records and modern journalism point to **March 7, 1922**. However, the official memorials at the site itself are inscribed with the date **March 9, 1922**. This difference, while seemingly small, highlights the challenges of documenting events that were primarily preserved through oral tradition rather than written records.</p>
+                    </div>
+                    <div class="p-8 bg-white rounded-lg shadow-md">
+                        <h4 class="font-bold text-xl mb-3">The Location</h4>
+                        <p>The massacre occurred on the banks of the Heir river in the Pal-Chitariya and Dadhvaav villages of Sabarkantha, Gujarat. It was Amalki Ekadashi, a festival day, when thousands of Bhil tribals gathered to protest under the leadership of Motilal Tejawat.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="uprising" class="py-20 px-6 bg-[#E6DACE]/30">
+            <div class="container mx-auto">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold mb-2">The Eki Movement: A Spark of Rebellion</h3>
+                    <p class="max-w-3xl mx-auto text-lg" id="uprising-text-to-summarize">The massacre was not a random act of violence; it was the brutal suppression of a powerful tribal uprising known as the Eki (Unity) Movement. Led by the charismatic Motilal Tejawat, the movement sought to end centuries of oppression faced by the Bhil community at the hands of both British rulers and local feudal lords.</p>
+                     <div class="flex justify-center mt-6">
+                        <button id="summarize-button" class="bg-[#C06A50] text-white font-bold py-2 px-6 rounded-full shadow-md hover:bg-[#A95A44] transition-colors">
+                            ✨ Summarize this section
+                        </button>
+                    </div>
+                     <p id="summary-output" class="mt-4 italic hidden"></p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-sm text-center">
+                        <div class="text-4xl mb-4">📜</div>
+                        <h4 class="font-bold text-xl mb-2">Oppressive 'Lagaan'</h4>
+                        <p>Excessive land revenue taxes imposed by the British and princely states pushed the tribal communities into a cycle of debt and poverty, serving as a primary catalyst for the unrest.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm text-center">
+                        <div class="text-4xl mb-4">⛓️</div>
+                        <h4 class="font-bold text-xl mb-2">Forced Labor ('Begar')</h4>
+                        <p>The Bhils were subjected to 'begar,' a system of forced, unpaid labor, which was a deeply humiliating and exploitative practice that fueled their collective anger and desire for justice.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm text-center">
+                        <div class="text-4xl mb-4">⚖️</div>
+                        <h4 class="font-bold text-xl mb-2">Criminal Tribes Act</h4>
+                        <p>The British designated the Bhils as a "criminal tribe" in 1871. This act legalized state-sanctioned persecution, allowing authorities to harass, torture, and kill tribals with impunity.</p>
+                    </div>
+                </div>
+
+                <div class="mt-16 bg-white p-8 rounded-lg shadow-md flex flex-col md:flex-row items-center gap-8">
+                    <img src="https://placehold.co/150x150/E6DACE/4A4A4A?text=M.T." alt="Motilal Tejawat" class="rounded-full w-32 h-32 object-cover flex-shrink-0">
+                    <div>
+                        <h4 class="font-bold text-2xl mb-2">The Leader: Motilal Tejawat</h4>
+                        <p>A merchant by birth, Tejawat was transformed into a revolutionary after witnessing the brutal exploitation of tribals. Inspired by other peasant movements, he organized the Bhil communities across Gujarat and Rajasthan. While he saw his movement as part of the freedom struggle, his methods, which included an armed following, led to his disavowal by Mahatma Gandhi, a key factor in the Eki movement's historical marginalization.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparison" class="py-20 px-6">
+            <div class="container mx-auto">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold mb-2">A Tale of Two Massacres</h3>
+                    <p class="max-w-3xl mx-auto text-lg">To understand why Pal-Dadhvav was forgotten, it's essential to compare it to the Jallianwala Bagh massacre of 1919, an event seared into India's national consciousness. While the scale of brutality was comparable, their legacies were vastly different. Use the tabs below to explore the key distinctions that shaped their historical fates.</p>
+                </div>
+
+                <div class="flex justify-center space-x-2 md:space-x-4 mb-8">
+                    <button class="tab-btn active px-4 py-2 rounded-full font-semibold" data-tab="cause">Cause</button>
+                    <button class="tab-btn px-4 py-2 rounded-full font-semibold" data-tab="location">Location</button>
+                    <button class="tab-btn px-4 py-2 rounded-full font-semibold" data-tab="aftermath">Aftermath</button>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-0.5 bg-gray-200 rounded-lg overflow-hidden">
+                    <div class="bg-white p-6">
+                        <h4 class="font-bold text-xl mb-3 text-center">Pal-Dadhvav (1922)</h4>
+                        <div id="pal-content" class="text-center"></div>
+                    </div>
+                    <div class="bg-white p-6">
+                        <h4 class="font-bold text-xl mb-3 text-center">Jallianwala Bagh (1919)</h4>
+                        <div id="jallianwala-content" class="text-center"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="legacy" class="py-20 px-6 bg-[#E6DACE]/30">
+            <div class="container mx-auto">
+                <div class="text-center mb-16">
+                    <h3 class="text-3xl font-bold mb-2">The Politics of Memory & A Reclaimed Legacy</h3>
+                    <p class="max-w-3xl mx-auto text-lg">The story of Pal-Dadhvav survived for decades primarily in the folk songs and oral traditions of the Bhil community. Its recent entry into the national discourse is a deliberate act of historical reclamation. This timeline traces its long journey from a forgotten tragedy to a memorialized part of India's history.</p>
+                </div>
+
+                <div class="relative max-w-2xl mx-auto">
+                    <div class="absolute left-0 top-0 h-full w-0.5 bg-gray-300" style="transform: translateX(-2rem);"></div>
+                    <div class="space-y-12">
+                        <div class="timeline-item relative pl-4">
+                            <h4 class="font-bold text-xl">1922-2002</h4>
+                            <p>For 80 years, the massacre is largely absent from official histories, its memory preserved in local folk songs like "Hansu dukhi, duniya dukhi." The Eki movement collapses, and its leader Motilal Tejawat is eventually imprisoned for a decade.</p>
+                        </div>
+                        <div class="timeline-item relative pl-4">
+                            <h4 class="font-bold text-xl">May 2003</h4>
+                            <p>A "Shahid Smarak" (Martyr's Memorial) is inaugurated at the site by then-Gujarat Chief Minister Narendra Modi, marking the first major state-sponsored recognition of the event.</p>
+                        </div>
+                        <div class="timeline-item relative pl-4">
+                            <h4 class="font-bold text-xl">March 2022</h4>
+                            <p>On the 100th anniversary, the Gujarat government officially describes the massacre as "bigger than Jallianwala Bagh," bringing it significant media attention and public awareness.</p>
+                        </div>
+                        <div class="timeline-item relative pl-4">
+                            <h4 class="font-bold text-xl">January 2022</h4>
+                            <p>A tableau depicting the Pal-Dadhvav massacre is featured in India's Republic Day parade, showcasing the tribal resistance to a national audience and cementing its place in the country's story of independence.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="chatbot" class="py-20 px-6 bg-[#FDFBF8]">
+            <div class="container mx-auto">
+                 <div class="text-center mb-12">
+                    <h3 class="text-3xl font-bold mb-2">✨ Ask a Historian</h3>
+                    <p class="max-w-3xl mx-auto text-lg">Use the power of an AI to ask detailed questions about the Pal-Dadhvav massacre, the Eki Movement, or any related historical context. Our virtual historian is here to help you dive deeper.</p>
+                </div>
+                <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+                    <div id="chat-history" class="space-y-4 mb-6 h-64 overflow-y-auto">
+                       <div class="flex justify-start">
+                           <div class="chat-message">Hello! I am a virtual historian ready to answer your questions about the Pal-Dadhvav massacre.</div>
+                       </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <textarea id="chat-input" class="flex-grow p-4 border border-gray-300 rounded-lg focus:outline-none focus:border-[#C06A50]" rows="2" placeholder="What would you like to know?"></textarea>
+                        <button id="send-button" class="bg-[#C06A50] text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-[#A95A44] transition-colors disabled:opacity-50 flex items-center justify-center">
+                            <span>Send</span>
+                            <div id="loading-indicator" class="hidden ml-2"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-[#4A4A4A] text-white py-8">
+        <div class="container mx-auto text-center px-6">
+            <p>This interactive experience is based on historical analysis of the Pal-Dadhvav massacre.</p>
+            <p class="text-sm mt-2 opacity-70">Designed to educate and preserve the memory of a forgotten chapter in India's freedom struggle.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const casualtyData = {
+                labels: ['British Official', 'Memorial (Official)', 'Memorial (Narrative)', 'Tribal/Local Account'],
+                datasets: [{
+                    label: 'Number of Casualties',
+                    data: [22, 200, 1200, 1500],
+                    backgroundColor: [
+                        'rgba(214, 163, 148, 0.6)',
+                        'rgba(192, 106, 80, 0.6)',
+                        'rgba(135, 74, 56, 0.6)',
+                        'rgba(89, 49, 37, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(214, 163, 148, 1)',
+                        'rgba(192, 106, 80, 1)',
+                        'rgba(135, 74, 56, 1)',
+                        'rgba(89, 49, 37, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+
+            const casualtyChartCtx = document.getElementById('casualtyChart').getContext('2d');
+            const myChart = new Chart(casualtyChartCtx, {
+                type: 'bar',
+                data: casualtyData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Conflicting Casualty Counts of the Pal-Dadhvav Massacre',
+                            font: {
+                                size: 16
+                            },
+                            color: '#4A4A4A'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.x !== null) {
+                                        label += context.parsed.x;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of People'
+                            }
+                        }
+                    }
+                }
+            });
+
+            const comparisonData = {
+                cause: {
+                    pal: "A protest against systemic oppression: the 'lagaan' (land revenue tax) and 'begar' (forced labor) imposed on the Bhil tribal community.",
+                    jallianwala: "A protest against the repressive Rowlatt Act, which gave British authorities sweeping powers to imprison political dissidents without trial."
+                },
+                location: {
+                    pal: "Remote, rural villages in Sabarkantha, Gujarat. The isolation made it easy for authorities to suppress news of the event.",
+                    jallianwala: "A major urban center, Amritsar, Punjab. The central location ensured rapid dissemination of news, sparking national outrage."
+                },
+                aftermath: {
+                    pal: "The Eki movement collapsed. Its leader, Motilal Tejawat, was disavowed by national leaders like Gandhi and eventually imprisoned for a decade. The event was forgotten.",
+                    jallianwala: "Sparked a nationwide movement and condemnation. It led to a re-evaluation of British military policy and became a symbol of colonial brutality."
+                }
+            };
+
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const palContent = document.getElementById('pal-content');
+            const jallianwalaContent = document.getElementById('jallianwala-content');
+
+            function updateTabContent(tab) {
+                palContent.innerHTML = `<p>${comparisonData[tab].pal}</p>`;
+                jallianwalaContent.innerHTML = `<p>${comparisonData[tab].jallianwala}</p>`;
+                
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.tab === tab) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    updateTabContent(button.dataset.tab);
+                });
+            });
+
+            updateTabContent('cause');
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 60) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-button');
+            const chatHistory = document.getElementById('chat-history');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            let chatHistoryArray = [];
+
+            const handleChat = async () => {
+                const prompt = chatInput.value.trim();
+                if (prompt === '') return;
+
+                sendButton.disabled = true;
+                loadingIndicator.classList.remove('hidden');
+
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'flex justify-end';
+                userMessageDiv.innerHTML = `<div class="chat-message user-message">${prompt}</div>`;
+                chatHistory.appendChild(userMessageDiv);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+
+                chatHistoryArray.push({ role: "user", parts: [{ text: `You are a virtual historian with knowledge of India's independence movement. Answer the following question about the Pal-Dadhvav massacre or related topics. Be factual and concise. Question: ${prompt}` }] });
+                chatInput.value = '';
+
+                try {
+                    const payload = { contents: chatHistoryArray };
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                        const botResponse = result.candidates[0].content.parts[0].text;
+                        chatHistoryArray.push({ role: "model", parts: [{ text: botResponse }] });
+
+                        const botMessageDiv = document.createElement('div');
+                        botMessageDiv.className = 'flex justify-start';
+                        botMessageDiv.innerHTML = `<div class="chat-message">${botResponse}</div>`;
+                        chatHistory.appendChild(botMessageDiv);
+                        chatHistory.scrollTop = chatHistory.scrollHeight;
+                    } else {
+                        throw new Error('Invalid API response');
+                    }
+                } catch (error) {
+                    const errorMessageDiv = document.createElement('div');
+                    errorMessageDiv.className = 'flex justify-start';
+                    errorMessageDiv.innerHTML = `<div class="chat-message text-red-500">Error: Could not get a response. Please try again.</div>`;
+                    chatHistory.appendChild(errorMessageDiv);
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                } finally {
+                    sendButton.disabled = false;
+                    loadingIndicator.classList.add('hidden');
+                }
+            };
+            sendButton.addEventListener('click', handleChat);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !sendButton.disabled) {
+                    handleChat();
+                }
+            });
+
+            const summarizeButton = document.getElementById('summarize-button');
+            const summaryOutput = document.getElementById('summary-output');
+            const uprisingText = document.getElementById('uprising-text-to-summarize');
+
+            summarizeButton.addEventListener('click', async () => {
+                summaryOutput.classList.remove('hidden');
+                summaryOutput.textContent = 'Generating summary...';
+
+                try {
+                    const prompt = `Summarize the following text in a single, short sentence suitable for a tweet or social media post: "${uprisingText.textContent}"`;
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0) {
+                        const summary = result.candidates[0].content.parts[0].text;
+                        summaryOutput.textContent = `Summary: "${summary}"`;
+                    } else {
+                        throw new Error('Invalid API response');
+                    }
+                } catch (error) {
+                    summaryOutput.textContent = 'Error: Could not generate summary.';
+                }
+            });
+
+            const ttsButton = document.getElementById('tts-button');
+            const ttsLoading = document.getElementById('tts-loading');
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            function base64ToArrayBuffer(base64) {
+                const binaryString = window.atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+
+            function pcmToWav(pcm16, sampleRate) {
+                const pcmData = pcm16;
+                const numChannels = 1;
+                const bitsPerSample = 16;
+                const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+                const blockAlign = numChannels * (bitsPerSample / 8);
+                const dataSize = pcmData.byteLength;
+
+                const buffer = new ArrayBuffer(44 + dataSize);
+                const view = new DataView(buffer);
+                let offset = 0;
+
+                function writeString(view, offset, string) {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                }
+
+                writeString(view, offset, 'RIFF'); offset += 4;
+                view.setUint32(offset, 36 + dataSize, true); offset += 4;
+                writeString(view, offset, 'WAVE'); offset += 4;
+                writeString(view, offset, 'fmt '); offset += 4;
+                view.setUint32(offset, 16, true); offset += 4;
+                view.setUint16(offset, 1, true); offset += 2;
+                view.setUint16(offset, numChannels, true); offset += 2;
+                view.setUint32(offset, sampleRate, true); offset += 4;
+                view.setUint32(offset, byteRate, true); offset += 4;
+                view.setUint16(offset, blockAlign, true); offset += 2;
+                view.setUint16(offset, bitsPerSample, true); offset += 2;
+                writeString(view, offset, 'data'); offset += 4;
+                view.setUint32(offset, dataSize, true); offset += 4;
+
+                const pcmBytes = new Uint8Array(buffer, 44);
+                for(let i = 0; i < dataSize; i++) {
+                    pcmBytes[i] = new Uint8Array(pcmData.buffer)[i];
+                }
+
+                return new Blob([buffer], { type: 'audio/wav' });
+            }
+
+            ttsButton.addEventListener('click', async () => {
+                ttsButton.disabled = true;
+                ttsLoading.classList.remove('hidden');
+
+                const textToSpeak = "The most basic facts about the Pal-Dadhvav massacre are contested. The official British account drastically minimized the event, while local memory and modern research paint a far grimmer picture. This discrepancy is central to understanding why the story was lost. This chart visualizes the conflicting claims about the number of lives lost, a stark representation of a history suppressed.";
+
+                try {
+                    const payload = {
+                        contents: [{
+                            parts: [{ text: `Say in a calm, informative voice: ${textToSpeak}` }]
+                        }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: { voiceName: "Rasalgethi" }
+                                }
+                            }
+                        },
+                        model: "gemini-2.5-flash-preview-tts"
+                    };
+
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
+                        const audioData = result.candidates[0].content.parts[0].inlineData.data;
+                        const sampleRate = parseInt(result.candidates[0].content.parts[0].inlineData.mimeType.match(/rate=(\d+)/)[1], 10);
+                        const pcmData = base64ToArrayBuffer(audioData);
+                        const pcm16 = new Int16Array(pcmData);
+                        const wavBlob = pcmToWav(pcm16, sampleRate);
+                        const audioUrl = URL.createObjectURL(wavBlob);
+                        const audio = new Audio(audioUrl);
+                        audio.play();
+                    } else {
+                        throw new Error('TTS response missing audio data.');
+                    }
+                } catch (error) {
+                    console.error('TTS Error:', error);
+                } finally {
+                    ttsButton.disabled = false;
+                    ttsLoading.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
